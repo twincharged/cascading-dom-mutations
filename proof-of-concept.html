@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue';
+        }
+
+        .demo {
+            margin: 40px 25px;
+        }
+
+        .demo>span {
+            color: firebrick;
+        }
+
+        .demo form {
+            padding: 20px;
+            border: 2px solid green;
+        }
+    </style>
+    <script>
+        function toggleFormAttr(attr) { const form = document.querySelector('#create-user'); const oldVal = typeof form.getAttribute(attr) === 'string'; form[oldVal ? 'removeAttribute' : 'setAttribute'](attr, ''); }
+        const pick = (obj, keys) => keys.reduce((acc, key) => {
+            acc[key] = obj[key];
+            return acc;
+        }, {});
+        const reverseMutateEls = (root, sel, els, cdm, k) => {
+            const keys = Object.keys(cdm[k])
+            root._cdmEls[sel].forEach(el => {
+                const df = el._cdmDefaults || {}
+                Object.assign(el, pick(df, keys))
+            })
+        }
+        const mutateEls = (root, sel, els, cdm, k) => {
+            const keys = Object.keys(cdm[k])
+            root._cdmEls[sel] = els
+            els.forEach(el => {
+                const df = el._cdmDefaults || {}
+                el._cdmDefaults = Object.assign(pick(el, keys, pick(df, keys)))
+                Object.assign(el, cdCDMm[k])
+            })
+        }
+        const selectCandidates = (root, cdm) => {
+            Object.keys(cdm).forEach(k => {
+                const sel = k.replace(/\&/g, ':scope')
+                const els = root.querySelectorAll(sel)
+                if (els.length) mutateEls(root, sel, els, cdm, k)
+                else if (root._cdmEls[sel]) reverseMutateEls(root, sel, els, cdm, k)
+            });
+        }
+        function CDM(rootSelector, cdm) {
+            document.querySelectorAll(rootSelector).forEach(root => {
+                root._cdmEls = root._cdmEls || {}
+                const observer = new MutationObserver((() => selectCandidates(root, cdm)))
+                observer.observe(root, { attributes: true });
+            })
+        }
+    </script>
+</head>
+
+<body>
+    <h1>Cascading Dom Mutations (CDM) Demo:</h1>
+    <h4>This demonstrates complex webapp functionality boiled down to declaritive configuration.</h4>
+    <div class="demo">
+        <span>Example demo form:</span>
+        <form id="create-user">
+            <fieldset name="user" title="Please enter these fields.">
+                <legend>Enter user information:</legend>
+                <label for="userid">User id:</label>
+                <input name="userid" type="text">
+                <br />
+                <label for="username">User Name:</label>
+                <input name="username" type="text">
+            </fieldset>
+            <button type="submit">Submit</button>
+        </form>
+    </div>
+    <h4>
+        Toggle form attributes:
+        <button onclick="toggleFormAttr('novalidate')">Toggle form validation</button>
+        <button onclick="toggleFormAttr('loading')">Toggle form loading</button>
+    </h4>
+    <p>
+        Or choose a custom attribute to toggle on the form:
+        <input type="text" placeholder="Ex: 'required'" name="attr">
+        <button onclick="toggleFormAttr(document.querySelector(`[name='attr']`).value)">Toggle</button>
+    </p>
+</body>
+
+<!-- Application CSS/JS below this line: -->
+<style>
+    fieldset[disabled] input {
+        background: #ccc;
+    }
+</style>
+<script>
+    CDM('form#create-user', {
+        '&[novalidate] fieldset': {
+            disabled: true,
+            title: "These fields will not be saved."
+        },
+        '&[loading] button[type="submit"]': {
+            textContent: "loading...",
+            disabled: true
+        }
+    })
+</script>
+
+</html>

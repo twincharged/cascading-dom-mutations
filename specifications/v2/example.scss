@@ -1,0 +1,99 @@
+/* CDM second spec: https://github.com/twincharged/cascading-dom-mutations */
+/* <---- STAGE 1 ----> */
+
+
+// 1. attributes
+credit-card-lookup {
+    loading: "";                     // boolean
+    class: "bg-red font-large";      // string
+    attempts: "2"                    // number
+    failed: none;                    // remove attribute
+}
+
+
+// 2. content (uses node.textContent)
+#status {
+    content: "Loading... please be patient!";
+}
+
+
+// 3. events.
+credit-card-lookup {
+    (success): $logSuccess, $templateData;
+}
+
+customer-order {
+    (failed): $logError;
+    (loading): $showGlobalAdvertisement;
+}
+
+customer-order[failed] {
+    (failed): !$logError; // example of removing logError handler once the customer-order element gets a [failed] attribute
+}
+
+
+// 4. conditions/matchers (standard CSS selectors)
+credit-card-lookup[success] #lookup-message {
+    title: "Your credit card is valid!";
+}
+
+
+// Complex, nested, business-logic example:
+// Plain-english explanation:
+// WHEN (the application is being piloted AND the user is not a super user AND the customer-order is confirmed)
+//     THEN (add the $logSubmit event handler AND make the zip-code input readonly with a title of "You cannot edit this field." )
+application-root[pilot] {
+    app-user:not([is-super-user]) ~ #app-main {
+        customer-order[is-confirmed] {
+            form {
+                (submit): $logSubmit;
+                input[name="zip-code"] {
+                    readonly: "";
+                    title: "You cannot edit this field.";
+                }
+            }
+        }
+    }
+}
+
+// Pragmatic user permission use case:
+app-user[role="READ_ONLY"] input#credit-card {
+    disabled: "";
+    title: "You do not have permission to edit this field.";
+}
+
+
+
+/* <---- STAGE 0 ----> */
+// example #4, with nesting
+credit-card-lookup {
+    &[success] {
+        #lookup-message {
+            title: "Your credit card is valid!";
+        }
+    }
+}
+
+// Value inheritance
+date-time {
+    title: &[description]; // sets date-time title attribute from the same date-time description attribute 
+}
+customer-order date-time {
+    title: &&[description]; // sets date-time title attribute from the parent (customer-order) description attribute 
+}
+
+
+// Property handlers (can be chained like event handlers)
+customer-order a.ups-link {
+    href: $createHref; // will invoke the createHref function with arguments: `createHref(parent, self)`
+}
+
+
+
+// Alternate syntaxes (deprecated)
+
+// credit-card-lookup {
+//     &[success] #lookup-type {
+//         text: <myCustomFunction>;
+//     }
+// }
